@@ -16,7 +16,8 @@
 #   choice=$(cmdReadChoice "$prompt")
 #
 
-source ./color.sh
+# Source the color.sh in the same folder as this script
+test -f ./color.sh && source ./color.sh
 
 # - The menu may be displayed with a prompt or without a prompt.
 #
@@ -67,24 +68,39 @@ source ./color.sh
   cmd::loop() {
     local handler=$1
     local postHandler=$2
+    local choice=$3
+    local firstTime=true
     local response=
     cmd::setOptions "${CMD_LAST_OPTS}/eXit"
     cmd::showHeader
     while true; do
-      cmd::prompt
-      local choice=$(cmd::getChoice)
+      if $firstTime;then
+        cmd::setChoice "$choice"
+        cmd::parseChoice $choice
+        firstTime=false
+      else
+        cmd::prompt
+        choice=$(cmd::getChoice)
+      fi
       local selected=$(cmd::getSelected)
       case "$choice" in
         x) break ;;
         *)
           cmd::showHeader
-          echo `y "~"` "$(date +%H:%M:%S) command: [$selected]"
-          response=$($handler "$selected")
-          # Display response
-          if [ -n "$response" ]; then
-            while read -r line; do
-              echo -e `y "~"` " $line"
-            done <<< "$response"
+          echo `y "┅━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┅┅"`
+          echo `y " $(date +%H:%M:%S) ┨"` "`y COMMAND:` $selected"
+          if "$CMD_OUTPUT_IMMEDIATELY"; then
+            echo `y "┄─────────┸──────────────────────────────────────────────────────┄┄"`
+            $handler "$selected"
+            echo `y "┅━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┅┅"`
+          else
+            response=$($handler "$selected")
+            # Display response
+            if [ -n "$response" ]; then
+              while read -r line; do
+                echo -e `y "~"` " $line"
+              done <<< "$response"
+            fi
           fi
           # Additional steps after command is run
           if [ -n "$postHandler" ]; then
@@ -100,7 +116,7 @@ source ./color.sh
     echo -en "\n${gg}${CM_ENV}>${ee} Press [v] to view template: "
     read choice
     case $choice in
-      v|V) less "$template" ;;
+      v|V) less -L "$template" ;;
       *) ;;
     esac
   }
@@ -234,12 +250,14 @@ source ./color.sh
     cmd::clearAfterOff() { CMD_CLEAR_AFTER=false ; }
     cmd::setColorOn() { COLOR=true ; }
     cmd::setColorOff() { COLOR=false ; }
+    cmd::setChoice() { CMD_CHOICE=$1 ; }
     cmd::setPrefix() { CMD_PREFIX=$1 ; }
     cmd::setPromptText() { CMD_PROMPT=$1 ; }
     cmd::setHeader() { CMD_HEADER="$@" ; }
     cmd::getPrefix() { echo $CMD_PREFIX ; }
     cmd::getChoice() { echo $CMD_CHOICE ; }
     cmd::getSelected() { echo $CMD_SELECTED ; }
+    cmd::setFlushOn() { CMD_OUTPUT_IMMEDIATELY=true ; }
     cmd::getOptions() { echo $CMD_LAST_OPTS ; }
   }
 
@@ -256,6 +274,7 @@ source ./color.sh
 
 # Static defaults
 CMD_PREFIX=
+CMD_OUTPUT_IMMEDIATELY=false
 
 ##### TESTING #######
 if [ "$0" == "$BASH_SOURCE" ]; then

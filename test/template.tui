@@ -1,0 +1,20 @@
+[INFO]
+name=AcmeForm
+
+[HEADER]
+format="${GG}MY PROG:${EE} VERSION $ACME_VERSION"
+
+[BODY]
+rows=20
+prepend="~"
+
+[PROMPT]
+prompt="Enter your name: "
+
+[OPTIONS]
+# display,key,handler,depends
+Env,e,handler
+Setup,s,handler
+Login,l,handler
+Deploy,d,handler,isLoggedIn
+eXit,x,fnExit
